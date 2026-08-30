@@ -1,0 +1,93 @@
+name: Build Tarteel Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "client/**"
+      - "shared/**"
+      - "server/**"
+      - "public/**"
+      - "drizzle/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "vite.config.*"
+      - "tsconfig.json"
+      - "android-wrapper/**"
+      - ".github/workflows/build-apk.yml"
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "10.4.1"
+
+jobs:
+  build-debug-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install web dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web application
+        run: pnpm build
+
+      - name: Copy web build into Capacitor
+        shell: bash
+        run: |
+          rm -rf android-wrapper/www
+          mkdir -p android-wrapper/www
+          cp -R dist/public/. android-wrapper/www/
+          test -f android-wrapper/www/index.html
+
+      - name: Install Capacitor dependencies
+        working-directory: android-wrapper
+        run: npm ci
+
+      - name: Sync Capacitor Android project
+        working-directory: android-wrapper
+        run: npx cap sync android
+
+      - name: Configure Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build debug APK
+        working-directory: android-wrapper/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          test -s android-wrapper/android/app/build/outputs/apk/debug/app-debug.apk
+          unzip -l android-wrapper/android/app/build/outputs/apk/debug/app-debug.apk | grep -q "assets/public/index.html"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tarteel-android-debug
+          path: android-wrapper/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
