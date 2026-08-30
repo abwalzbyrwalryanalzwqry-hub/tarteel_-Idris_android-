@@ -48,6 +48,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build web application
+        env:
+          # Public OAuth values are safe to embed in the client bundle. The
+          # fallback in client/src/const.ts also protects APK builds where
+          # hosting-platform variables are not forwarded.
+          VITE_OAUTH_PORTAL_URL: https://manus.im
+          VITE_APP_ID: 8KMXG5HuLxbvvs33zAzb6B
+          VITE_PUBLIC_APP_URL: https://tarteel-qura-8kmxg5hu.manus.space
+          VITE_API_BASE_URL: https://tarteel-qura-8kmxg5hu.manus.space
         run: pnpm build
 
       - name: Copy web build into Capacitor

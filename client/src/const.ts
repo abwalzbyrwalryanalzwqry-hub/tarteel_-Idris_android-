@@ -1,6 +1,12 @@
 import { OAUTH_STATE_COOKIE, encodeOAuthState, isOAuthLoginAttemptLocked } from "@shared/const";
 import { apiUrl } from "./lib/runtimeConfig";
 
+// Capacitor builds do not receive the hosting platform's Vite env injection.
+// Keep these public OAuth identifiers available in the APK while leaving
+// server credentials exclusively on the backend.
+const OAUTH_PORTAL_ORIGIN = "https://manus.im";
+const OAUTH_APP_ID = "8KMXG5HuLxbvvs33zAzb6B";
+
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
 // Start the Manus OAuth login. Call this from an event handler or effect at the
@@ -24,9 +30,13 @@ export const startLogin = () => {
     // Storage may be blocked; the nonce guard on the server still fails closed.
   }
 
-  const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;
-  const appId = import.meta.env.VITE_APP_ID;
+  const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL?.trim() || OAUTH_PORTAL_ORIGIN;
+  const appId = import.meta.env.VITE_APP_ID?.trim() || OAUTH_APP_ID;
   const redirectUri = apiUrl("/api/oauth/callback");
+
+  if (!appId || !oauthPortalUrl || !redirectUri) {
+    throw new Error("OAuth configuration is incomplete");
+  }
 
   const nonce = crypto.randomUUID();
   document.cookie = `${OAUTH_STATE_COOKIE}=${nonce}; Path=/; Max-Age=600; SameSite=None; Secure`;
