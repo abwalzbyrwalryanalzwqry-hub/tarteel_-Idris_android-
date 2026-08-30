@@ -7,6 +7,7 @@ import superjson from "superjson";
 import App from "./App";
 import { ROLE_SIMULATION_STORAGE_KEY } from "./contexts/RoleSimulationContext";
 import { apiUrl } from "./lib/runtimeConfig";
+import { installNativeOAuthListener } from "./lib/nativeOAuth";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -105,6 +106,8 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
     });
   });
 }
+
+void installNativeOAuthListener();
 
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
