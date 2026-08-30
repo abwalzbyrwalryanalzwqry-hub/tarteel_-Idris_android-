@@ -21,7 +21,6 @@ permissions:
 
 env:
   NODE_VERSION: "22"
-  PNPM_VERSION: "10.4.1"
 
 jobs:
   build-debug-apk:
@@ -44,8 +43,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
 
       - name: Install web dependencies
         run: pnpm install --frozen-lockfile
